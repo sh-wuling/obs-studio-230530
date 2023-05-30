@@ -2,6 +2,7 @@
 #include <util/threading.h>
 #include <util/platform.h>
 #include <util/dstr.h>
+#include <util/mobile.h>
 #include <obs-module.h>
 #include <file-updater/file-updater.h>
 
@@ -116,5 +117,6 @@ void obs_module_unload(void)
 	unload_twitch_data();
 	free_showroom_data();
 	unload_dacast_data();
+    free_stream_cache();
 	dstr_free(&module_name);
 }

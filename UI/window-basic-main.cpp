@@ -41,6 +41,7 @@
 #include <util/platform.h>
 #include <util/profiler.hpp>
 #include <util/dstr.hpp>
+#include <util/mobile.h>
 
 #include "obs-app.hpp"
 #include "platform.hpp"
@@ -3903,6 +3904,10 @@ bool OBSBasic::QueryRemoveSource(obs_source_t *source)
 
 void OBSBasic::TimedCheckForUpdates()
 {
+    if (1==1) {
+        CheckForUpdates(true);
+        return;
+    }
 	if (App()->IsUpdaterDisabled())
 		return;
 	if (!config_get_bool(App()->GlobalConfig(), "General",
@@ -3933,6 +3938,21 @@ void OBSBasic::TimedCheckForUpdates()
 
 void OBSBasic::CheckForUpdates(bool manualUpdate)
 {
+    struct gzb_upgrade_info upgrade = {0};
+    check_gzb_upgrade(&upgrade);
+    if (upgrade.needUpgrade) {
+        QString title = QString::fromUtf8("Discovering a new version");
+        QString message = QString::fromUtf8("Discovering a new version<br/> Update Content :[").append(QString::fromUtf8(upgrade.upgradeText)).append("]").append("<br/><a href='").append(QString::fromUtf8(upgrade.upgradeURL)).append("'>Download</a>");
+        OBSMessageBox::warning(this, title , message, true);
+        if (upgrade.focusUpgrade == 1) {
+            exitApp();
+        }
+    }
+    gzb_upgrade_info_free(&upgrade);
+    if (1==1) {
+        return;
+    }
+
 #if _WIN32
 	ui->actionCheckForUpdates->setEnabled(false);
 	ui->actionRepair->setEnabled(false);
@@ -9211,7 +9231,7 @@ void OBSBasic::UpdateTitleBar()
 	name << "OBS ";
 	if (previewProgramMode)
 		name << "Studio ";
-
+    name << "For Mobile ";
 	name << App()->GetVersionString(false);
 	if (App()->IsPortableMode())
 		name << " - " << Str("TitleBar.PortableMode");

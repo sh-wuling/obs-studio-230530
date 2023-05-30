@@ -16,6 +16,7 @@ add_library(OBS::libobs ALIAS libobs)
 find_package(Threads REQUIRED)
 find_package(FFmpeg REQUIRED avformat avutil swscale swresample OPTIONAL_COMPONENTS avcodec)
 find_package(ZLIB REQUIRED)
+find_package(CURL REQUIRED)
 
 if(ENABLE_UI)
   find_qt(COMPONENTS Core)
@@ -78,6 +79,14 @@ target_sources(
 target_sources(
   libobs
   PRIVATE # cmake-format: sortable
+          util/mobile.c
+          util/mobile.h
+          util/wrapper_aes.h
+          util/wrapper_aes.cpp
+          util/AES.hpp
+          util/AES.cpp
+          util/base64.hpp
+          util/base64.cpp
           util/array-serializer.c
           util/array-serializer.h
           util/base.c
@@ -242,7 +251,8 @@ target_link_libraries(
           FFmpeg::swresample
           jansson::jansson
           ZLIB::ZLIB
-  PUBLIC Threads::Threads)
+  PUBLIC  CURL::libcurl
+          Threads::Threads)
 
 if(OS_WINDOWS)
   include(cmake/os-windows.cmake)

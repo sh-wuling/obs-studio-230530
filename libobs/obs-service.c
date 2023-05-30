@@ -249,6 +249,39 @@ const char *obs_service_get_password(const obs_service_t *service)
 	return service->info.get_password(service->context.data);
 }
 
+const char *obs_service_get_stream_code(const obs_service_t *service)
+{
+    if (!obs_service_valid(service, "obs_service_get_stream_code"))
+        return NULL;
+
+    if (!service->info.get_stream_code) {
+        return NULL;
+    }
+    return service->info.get_stream_code(service->context.data);
+}
+
+const char *obs_service_get_stream_metadata(const obs_service_t *service)
+{
+    if (!obs_service_valid(service, "obs_service_get_stream_metadata error")) {
+        return NULL;
+    }
+    if (!service->info.get_stream_metadata) {
+        return NULL;
+    }
+    return service->info.get_stream_metadata(service->context.data);
+}
+
+const char *obs_service_get_stream_error(const obs_service_t *service)
+{
+    if (!obs_service_valid(service, "obs_service_get_stream_error error")) {
+        return NULL;
+    }
+    if (!service->info.get_stream_metadata) {
+        return NULL;
+    }
+    return service->info.get_stream_error(service->context.data);
+}
+
 void obs_service_activate(struct obs_service *service)
 {
 	if (!obs_service_valid(service, "obs_service_activate"))

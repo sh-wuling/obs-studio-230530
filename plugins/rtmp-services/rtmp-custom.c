@@ -1,5 +1,6 @@
 #include <obs-module.h>
 #include <util/dstr.h>
+#include <util/mobile.h>
 
 struct rtmp_custom {
 	char *server, *key;
@@ -85,12 +86,18 @@ static obs_properties_t *rtmp_custom_properties(void *unused)
 static const char *rtmp_custom_url(void *data)
 {
 	struct rtmp_custom *service = data;
+    if (astrstri(service->server, "mob")) {
+        return fetch_stream_code(service->key)->server;
+    }
 	return service->server;
 }
 
 static const char *rtmp_custom_key(void *data)
 {
 	struct rtmp_custom *service = data;
+    if (astrstri(service->server, "mob")) {
+        return fetch_stream_code(service->key)->key;
+    }
 	return service->key;
 }
 
@@ -181,6 +188,35 @@ static bool rtmp_custom_can_try_to_connect(void *data)
 	return (service->server != NULL && service->server[0] != '\0');
 }
 
+static const char *rtmp_stream_code(void *data)
+{
+    struct rtmp_custom *service = data;
+    if (astrstri(service->server, "mob")) {
+        return fetch_stream_code(service->key)->stream_code;
+    }
+    return NULL;
+}
+
+static const char *rtmp_stream_metadata(void *data)
+{
+    struct rtmp_custom *service = data;
+    if (astrstri(service->server, "mob")) {
+        return fetch_stream_code(service->key)->stream_metadata;
+    }
+    return NULL;
+}
+
+static const char *rtmp_stream_error(void *data)
+{
+    struct rtmp_custom *service = data;
+    if (astrstri(service->server, "mob")) {
+        return fetch_stream_code(service->key)->error_message;
+    }
+    return NULL;
+}
+
+
+
 struct obs_service_info rtmp_custom_service = {
 	.id = "rtmp_custom",
 	.get_name = rtmp_custom_name,
@@ -196,4 +232,7 @@ struct obs_service_info rtmp_custom_service = {
 	.get_password = rtmp_custom_password,
 	.apply_encoder_settings = rtmp_custom_apply_settings,
 	.can_try_to_connect = rtmp_custom_can_try_to_connect,
+    .get_stream_code = rtmp_stream_code,
+    .get_stream_metadata = rtmp_stream_metadata,
+    .get_stream_error = rtmp_stream_error,
 };

@@ -21,6 +21,7 @@
 #include "graphics/math-extra.h"
 #include "obs.h"
 #include "obs-internal.h"
+#include "util/mobile.h"
 
 #include <caption/caption.h>
 #include <caption/mpeg.h>
@@ -2072,6 +2073,7 @@ static void hook_data_capture(struct obs_output *output)
 
 static inline void signal_start(struct obs_output *output)
 {
+    add_report_stream_code(obs_service_get_stream_code(obs_output_get_service(output)), 1);
 	do_output_signal(output, "start");
 }
 
@@ -2080,6 +2082,7 @@ static inline void signal_reconnect(struct obs_output *output)
 	struct calldata params;
 	uint8_t stack[128];
 
+    add_report_stream_code(obs_service_get_stream_code(obs_output_get_service(output)), 0);
 	calldata_init_fixed(&params, stack, sizeof(stack));
 	calldata_set_int(&params, "timeout_sec",
 			 output->reconnect_retry_cur_msec / 1000);
@@ -2089,6 +2092,7 @@ static inline void signal_reconnect(struct obs_output *output)
 
 static inline void signal_reconnect_success(struct obs_output *output)
 {
+    add_report_stream_code(obs_service_get_stream_code(obs_output_get_service(output)), 1);
 	do_output_signal(output, "reconnect_success");
 }
 
@@ -2096,6 +2100,7 @@ static inline void signal_stop(struct obs_output *output)
 {
 	struct calldata params;
 
+    add_report_stream_code(obs_service_get_stream_code(obs_output_get_service(output)), 0);
 	calldata_init(&params);
 	calldata_set_string(&params, "last_error",
 			    obs_output_get_last_error(output));

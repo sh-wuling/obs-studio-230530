@@ -2530,6 +2530,13 @@ obs_service_get_username(const obs_service_t *service);
 OBS_DEPRECATED EXPORT const char *
 obs_service_get_password(const obs_service_t *service);
 
+
+EXPORT const char *obs_service_get_stream_code(const obs_service_t *service);
+
+EXPORT const char *obs_service_get_stream_metadata(const obs_service_t *service);
+
+EXPORT const char *obs_service_get_stream_error(const obs_service_t *service);
+
 /**
  * Applies service-specific video encoder settings.
  *

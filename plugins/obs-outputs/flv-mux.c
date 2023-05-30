@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <util/dstr.h>
 #include <util/array-serializer.h>
+#include <jansson.h>
 #include "flv-mux.h"
 #include "obs-output-ver.h"
 #include "rtmp-helpers.h"
@@ -134,49 +135,67 @@ static void build_flv_meta_data(obs_output_t *context, uint8_t **output,
 
 	*enc++ = AMF_ECMA_ARRAY;
 	enc = AMF_EncodeInt32(enc, end, 20);
+    const char* stream_metadata = obs_service_get_stream_metadata(obs_output_get_service(context));
+    if (stream_metadata != NULL) {
+        json_error_t error;
+        json_t *metadata_json = json_loads(stream_metadata, JSON_REJECT_DUPLICATES, &error);
+        if (metadata_json) {
+            const char *metadata_name;
+            json_t *metadata_value;
+            json_object_foreach(metadata_json, metadata_name, metadata_value) {
+                if (json_is_string(metadata_value)) {
+                    enc_str_val(&enc, end, metadata_name, json_string_value(metadata_value));
+                } else if json_is_number(metadata_value) {
+                    enc_num_val(&enc, end, metadata_name, json_number_value(metadata_value));
+                } else if json_is_integer(metadata_value) {
+                    enc_num_val(&enc, end, metadata_name, json_integer_value(metadata_value));
+                }
+            }
+        }
+    } else {
+        enc_num_val(&enc, end, "duration", 0.0);
+        enc_num_val(&enc, end, "fileSize", 0.0);
 
-	enc_num_val(&enc, end, "duration", 0.0);
-	enc_num_val(&enc, end, "fileSize", 0.0);
+        enc_num_val(&enc, end, "width",
+                (double)obs_encoder_get_width(vencoder));
+        enc_num_val(&enc, end, "height",
+                (double)obs_encoder_get_height(vencoder));
 
-	enc_num_val(&enc, end, "width",
-		    (double)obs_encoder_get_width(vencoder));
-	enc_num_val(&enc, end, "height",
-		    (double)obs_encoder_get_height(vencoder));
+        enc_num_val(&enc, end, "videocodecid", VIDEODATA_AVCVIDEOPACKET);
+        enc_num_val(&enc, end, "videodatarate", encoder_bitrate(vencoder));
+        enc_num_val(&enc, end, "framerate", video_output_get_frame_rate(video));
 
-	enc_num_val(&enc, end, "videocodecid", VIDEODATA_AVCVIDEOPACKET);
-	enc_num_val(&enc, end, "videodatarate", encoder_bitrate(vencoder));
-	enc_num_val(&enc, end, "framerate", video_output_get_frame_rate(video));
+        enc_num_val(&enc, end, "audiocodecid", AUDIODATA_AAC);
+        enc_num_val(&enc, end, "audiodatarate", encoder_bitrate(aencoder));
+        enc_num_val(&enc, end, "audiosamplerate",
+                (double)obs_encoder_get_sample_rate(aencoder));
+        enc_num_val(&enc, end, "audiosamplesize", 16.0);
+        enc_num_val(&enc, end, "audiochannels",
+                (double)audio_output_get_channels(audio));
 
-	enc_num_val(&enc, end, "audiocodecid", AUDIODATA_AAC);
-	enc_num_val(&enc, end, "audiodatarate", encoder_bitrate(aencoder));
-	enc_num_val(&enc, end, "audiosamplerate",
-		    (double)obs_encoder_get_sample_rate(aencoder));
-	enc_num_val(&enc, end, "audiosamplesize", 16.0);
-	enc_num_val(&enc, end, "audiochannels",
-		    (double)audio_output_get_channels(audio));
+        enc_bool_val(&enc, end, "stereo",
+                 audio_output_get_channels(audio) == 2);
+        enc_bool_val(&enc, end, "2.1", audio_output_get_channels(audio) == 3);
+        enc_bool_val(&enc, end, "3.1", audio_output_get_channels(audio) == 4);
+        enc_bool_val(&enc, end, "4.0", audio_output_get_channels(audio) == 4);
+        enc_bool_val(&enc, end, "4.1", audio_output_get_channels(audio) == 5);
+        enc_bool_val(&enc, end, "5.1", audio_output_get_channels(audio) == 6);
+        enc_bool_val(&enc, end, "7.1", audio_output_get_channels(audio) == 8);
 
-	enc_bool_val(&enc, end, "stereo",
-		     audio_output_get_channels(audio) == 2);
-	enc_bool_val(&enc, end, "2.1", audio_output_get_channels(audio) == 3);
-	enc_bool_val(&enc, end, "3.1", audio_output_get_channels(audio) == 4);
-	enc_bool_val(&enc, end, "4.0", audio_output_get_channels(audio) == 4);
-	enc_bool_val(&enc, end, "4.1", audio_output_get_channels(audio) == 5);
-	enc_bool_val(&enc, end, "5.1", audio_output_get_channels(audio) == 6);
-	enc_bool_val(&enc, end, "7.1", audio_output_get_channels(audio) == 8);
+        dstr_printf(&encoder_name, "%s (libobs version ", MODULE_NAME);
 
-	dstr_printf(&encoder_name, "%s (libobs version ", MODULE_NAME);
+    #ifdef HAVE_OBSCONFIG_H
+        dstr_cat(&encoder_name, obs_get_version_string());
+    #else
+        dstr_catf(&encoder_name, "%d.%d.%d", LIBOBS_API_MAJOR_VER,
+              LIBOBS_API_MINOR_VER, LIBOBS_API_PATCH_VER);
+    #endif
 
-#ifdef HAVE_OBSCONFIG_H
-	dstr_cat(&encoder_name, obs_get_version_string());
-#else
-	dstr_catf(&encoder_name, "%d.%d.%d", LIBOBS_API_MAJOR_VER,
-		  LIBOBS_API_MINOR_VER, LIBOBS_API_PATCH_VER);
-#endif
+        dstr_cat(&encoder_name, ")");
 
-	dstr_cat(&encoder_name, ")");
-
-	enc_str_val(&enc, end, "encoder", encoder_name.array);
-	dstr_free(&encoder_name);
+        enc_str_val(&enc, end, "encoder", encoder_name.array);
+        dstr_free(&encoder_name);
+    }
 
 	*enc++ = 0;
 	*enc++ = 0;
