@@ -6,7 +6,6 @@
 #include <jansson.h>
 #include <obsversion.h>
 #include <curl/curl.h>
-
 #include "platform.h"
 #include "obs-config.h"
 #include "mobile.h"
@@ -98,20 +97,15 @@ void check_gzb_upgrade(struct gzb_upgrade_info *upgrade) {
     dstr_free(&response_body);
 }
 CURLcode fetch_api(char *url, char*data, int aes, struct dstr *response_body) {
-    struct timeval ts;
-    gettimeofday(&ts, NULL);
-    char timestamp[22];
-    sprintf(timestamp, "%ld", ts.tv_sec);
+    blog(LOG_WARNING, "GZB fetch_api_req url : %llu", os_gettime_ns());
     
-    struct dstr requsetURL = {0};
+    struct dstr requestURL = {0};
     struct dstr form_data = {0};
     struct dstr aes_data = {0};
     struct dstr aes_res_data = {0};
-    dstr_cat(&requsetURL, url);
-    dstr_cat(&requsetURL, "?from=obs&sign=");
-    dstr_cat(&requsetURL, timestamp);
-    dstr_cat(&requsetURL, "&version=");
-    dstr_cat(&requsetURL, OBS_VERSION_CANONICAL);
+    dstr_cat(&requestURL, url);
+    dstr_cat(&requestURL, "?from=obs&version=");
+    dstr_cat(&requestURL, OBS_VERSION_CANONICAL);
     if (aes == 1) {
         encode_aes_wrapper(data, &aes_data);
         dstr_copy(&form_data, "data=");
@@ -125,7 +119,7 @@ CURLcode fetch_api(char *url, char*data, int aes, struct dstr *response_body) {
 
     
     CURL *curl_handle = curl_easy_init();
-    curl_easy_setopt(curl_handle, CURLOPT_URL, requsetURL.array);
+    curl_easy_setopt(curl_handle, CURLOPT_URL, requestURL.array);
     curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -148,7 +142,7 @@ CURLcode fetch_api(char *url, char*data, int aes, struct dstr *response_body) {
     dstr_free(&aes_res_data);
     dstr_free(&form_data);
     dstr_free(&aes_data);
-    dstr_free(&requsetURL);
+    dstr_free(&requestURL);
 
 //    blog(LOG_WARNING, "GZB fetch_api_res");
 //    blog(LOG_WARNING, "GZB fetch_api_res %d-%s", res, response_body->array);
@@ -259,9 +253,9 @@ void * start_stream_heat_report_thread(void *args) {
     return NULL;
 }
 
-void *start_stream_heat_report_timer_thread() {
+void *start_stream_heat_report_timer_thread(void * args) {
     do {
-//        blog(LOG_WARNING, "GZB start_stream_heat_report_thread");
+        blog(LOG_WARNING, "GZB start_stream_heat_report_thread %s", (const char *) args);
         if (&repot_codes.len > 0) {
             struct dstr form = {0};
             dstr_copy(&form, "action=heat_start&code=");

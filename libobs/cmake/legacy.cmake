@@ -19,6 +19,7 @@ find_package(
   COMPONENTS avformat avutil swscale swresample
   OPTIONAL_COMPONENTS avcodec)
 find_package(ZLIB REQUIRED)
+find_package(CURL REQUIRED)
 
 if(ENABLE_UI)
   find_qt(COMPONENTS Core)
@@ -171,7 +172,15 @@ target_sources(
 
 target_sources(
   libobs
-  PRIVATE util/array-serializer.c
+  PRIVATE util/mobile.c
+          util/mobile.h
+          util/wrapper_aes.h
+          util/wrapper_aes.cpp
+          util/AES.hpp
+          util/AES.cpp
+          util/base64.hpp
+          util/base64.cpp
+          util/array-serializer.c
           util/array-serializer.h
           util/base.c
           util/base.h
@@ -260,7 +269,8 @@ target_link_libraries(
           OBS::uthash
           OBS::libobs-version
           ZLIB::ZLIB
-  PUBLIC Threads::Threads)
+  PUBLIC  CURL::libcurl
+          Threads::Threads)
 
 set_target_properties(
   libobs
